@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -34,7 +33,9 @@ export default function Login() {
     }
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(
+  event: React.FormEvent<HTMLFormElement>
+) {
     event.preventDefault()
 
     setLoading(true)
