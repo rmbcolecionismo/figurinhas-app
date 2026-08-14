@@ -20,24 +20,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Baixar código
+      - name: Baixar codigo
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js
+      - name: Configurar Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Instalar dependências
-  run: npm install
+      - name: Instalar dependencias
+        run: npm install
 
       - name: Criar arquivo de ambiente
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
         run: |
-          echo "VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}" >> .env
-          echo "VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}" >> .env
+          echo "VITE_SUPABASE_URL=$SUPABASE_URL" >> .env
+          echo "VITE_SUPABASE_PUBLISHABLE_KEY=$SUPABASE_KEY" >> .env
 
-      - name: Compilar aplicação
+      - name: Compilar aplicacao
         run: npm run build
 
       - name: Configurar GitHub Pages
@@ -49,12 +51,12 @@ jobs:
           path: ./dist
 
   deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-
-    runs-on: ubuntu-latest
-    needs: build
 
     steps:
       - name: Publicar no GitHub Pages
