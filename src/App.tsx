@@ -333,14 +333,10 @@ function Shell({ profile }: { profile: Profile | null }) {
             element={<Navigate to="/dashboard" replace />}
           />
 
-          <Route
-            path="/dashboard"
-            element={
-              <Dashboard
-                name={profile?.nome || 'Colecionador'}
-              />
-            }
-          />
+        <Route
+  path="/dashboard"
+  element={<Dashboard />}
+/>
 
           <Route
             path="/colecao"
