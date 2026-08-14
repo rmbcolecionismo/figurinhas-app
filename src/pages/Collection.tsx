@@ -2,16 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
-type Album = {
-  id: string
-  nome: string
-  descricao?: string | null
-  ano?: number | null
-  capa_url?: string | null
-  total_stickers?: number | null
-  ativo?: boolean | null
-}
-
 type Selection = {
   id: string
   nome: string
@@ -89,10 +79,10 @@ export default function Collection() {
       }
 
       const { data, error: albumError } = await supabase
-        .from('albums')
-        .select(
-          'id, nome, descrição, ano, capa_url, total_stickers, ativo, created_at, updated_at'
-        )
+  .from('albums')
+  .select(
+    'id, nome, ano, capa_url, total_stickers, ativo, created_at, updated_at'
+  )
         .eq('ativo', true)
         .order('ano', { ascending: false })
         .order('nome', { ascending: true })
