@@ -2,6 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
+type Album = {
+  id: string
+  nome: string
+  ano?: number | null
+  capa_url?: string | null
+  total_stickers?: number | null
+  ativo?: boolean | null
+}
+
 type Selection = {
   id: string
   nome: string
