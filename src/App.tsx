@@ -1,9 +1,369 @@
-import {useEffect,useState} from 'react'; import {Link,Navigate,Route,Routes,useNavigate} from 'react-router-dom'; import type {Session,User} from '@supabase/supabase-js'; import {supabase,supabaseConfigured} from './lib/supabase'; import {BookOpen,Home,LogOut,Menu,Shield,Sparkles,UserRound,X} from 'lucide-react';
+import { useEffect, useState, type FormEvent } from 'react'
+import {
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+} from 'react-router-dom'
+import type { Session, User } from '@supabase/supabase-js'
+import {
+  BookOpen,
+  Home,
+  LogOut,
+  Menu,
+  Shield,
+  Sparkles,
+  UserRound,
+  X,
+} from 'lucide-react'
 
-type Profile={id:string;nome:string|null;avatar_url:string|null;role:'user'|'admin'};
-export default function App(){const[s,setS]=useState<Session|null>(null);const[p,setP]=useState<Profile|null>(null);const[loading,setLoading]=useState(true);useEffect(()=>{let on=true;supabase.auth.getSession().then(async({data})=>{if(!on)return;setS(data.session);if(data.session)await profile(data.session.user);setLoading(false)});const {data:l}=supabase.auth.onAuthStateChange(async(_,ns)=>{setS(ns);if(ns)await profile(ns.user);else setP(null)});return()=>{on=false;l.subscription.unsubscribe()};},[]);async function profile(u:User){const{data}=await supabase.from('profiles').select('id,nome,avatar_url,role').eq('id',u.id).maybeSingle();setP(data as Profile|null)}if(loading)return <div className="splash"><Sparkles/><h1>Figurinhas</h1></div>;if(!s)return <Auth/>;return <Shell profile={p}/>}
-function Auth(){const[signup,setSignup]=useState(false),[email,setEmail]=useState(''),[pass,setPass]=useState(''),[name,setName]=useState(''),[msg,setMsg]=useState(''),[err,setErr]=useState('');async function google(){if(!supabaseConfigured)return setErr('Configure o .env com as credenciais do Supabase.');const{error}=await supabase.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin}});if(error)setErr(error.message)}async function submit(e:React.FormEvent){e.preventDefault();setErr('');setMsg('');if(!supabaseConfigured)return setErr('Configure o .env com as credenciais do Supabase.');const r=signup?await supabase.auth.signUp({email,password:pass,options:{data:{full_name:name}}}):await supabase.auth.signInWithPassword({email,password:pass});if(r.error)setErr(r.error.message);else if(signup)setMsg('Conta criada. Verifique o seu e-mail se a confirmação estiver ativa.')}return <main className="auth"><section><span className="brand"><Sparkles/></span><small>COLECIONE • ORGANIZE • COMPLETE</small><h1>A sua coleção de figurinhas.</h1><p>Controle álbuns, figurinhas, faltas e repetidas num só lugar.</p></section><div className="authbox"><small>BEM-VINDO</small><h2>{signup?'Criar conta':'Entrar'}</h2><button onClick={google} className="google">G &nbsp; Continuar com Google</button><div className="or">ou</div><form onSubmit={submit}>{signup&&<input placeholder="Nome" value={name} onChange={e=>setName(e.target.value)} required/>}<input type="email" placeholder="E-mail" value={email} onChange={e=>setEmail(e.target.value)} required/><input type="password" placeholder="Palavra-passe" minLength={6} value={pass} onChange={e=>setPass(e.target.value)} required/>{err&&<div className="error">{err}</div>}{msg&&<div className="success">{msg}</div>}<button className="primary">{signup?'Criar conta':'Entrar'}</button></form><p>{signup?'Já tem uma conta?':'Ainda não tem conta?'} <button className="link" onClick={()=>setSignup(!signup)}>{signup?'Entrar':'Criar conta'}</button></p></div></main>}
-function Shell({profile}:{profile:Profile|null}){const[open,setOpen]=useState(false),nav=useNavigate();async function logout(){await supabase.auth.signOut();nav('/')}return <div className="layout"><aside className={open?'open':''}><div className="logo"><span className="brand small"><Sparkles/></span><b>Figurinhas</b><button onClick={()=>setOpen(false)} className="close"><X/></button></div><div className="who"><UserRound/><span>{profile?.nome||'Colecionador'}<small>{profile?.role==='admin'?'Administrador':'Colecionador'}</small></span></div><nav><Link to="/dashboard"><Home/> Início</Link><Link to="/colecao"><BookOpen/> Minha coleção</Link>{profile?.role==='admin'&&<Link to="/admin"><Shield/> Painel admin</Link>}</nav><button className="logout" onClick={logout}><LogOut/> Sair</button></aside>{open&&<div className="overlay" onClick={()=>setOpen(false)}/>}<div className="main"><header><button className="menu" onClick={()=>setOpen(true)}><Menu/></button><b>Figurinhas</b></header><Routes><Route path="/" element={<Navigate to="/dashboard"/>}/><Route path="/dashboard" element={<Dashboard name={profile?.nome||'Colecionador'}/>}/><Route path="/colecao" element={<Collection/>}/><Route path="/admin" element={profile?.role==='admin'?<Admin/>:<Navigate to="/dashboard"/>}/></Routes></div></div>}
-function Dashboard({name}:{name:string}){return <main className="content"><small>MINHA COLEÇÃO</small><h1>Olá, {name.split(' ')[0]}!</h1><p>O sistema está ligado à autenticação do Supabase.</p><div className="cards"><div>Álbuns<strong>0</strong></div><div>Figurinhas<strong>0</strong></div><div>Faltam<strong>0</strong></div><div>Repetidas<strong>0</strong></div></div><div className="empty"><BookOpen/><h2>A sua coleção começa aqui</h2><p>Quando o administrador cadastrar os álbuns, eles aparecerão na sua coleção.</p><Link to="/colecao">Abrir coleção →</Link></div></main>}
-function Collection(){return <main className="content"><small>COLEÇÃO</small><h1>Minha coleção</h1><p>Área preparada para receber os álbuns e figurinhas do Supabase.</p><div className="empty"><BookOpen/><h2>Nenhum álbum selecionado</h2><p>Na próxima etapa vamos conectar esta tela às tabelas reais e ao Storage.</p></div></main>}
-function Admin(){return <main className="content"><small>ADMINISTRAÇÃO</small><h1>Painel administrativo</h1><p>Área reservada para administradores.</p><div className="cards"><div>Álbuns<strong>CRUD</strong></div><div>Figurinhas<strong>CRUD</strong></div><div>Importação<strong>CSV</strong></div><div>Utilizadores<strong>Gestão</strong></div></div></main>}
+import { supabase, supabaseConfigured } from './lib/supabase'
+import Dashboard from './pages/Dashboard'
+import Collection from './pages/Collection'
+import Admin from './pages/Admin'
+
+type Profile = {
+  id: string
+  nome: string | null
+  avatar_url: string | null
+  role: 'user' | 'admin' | null
+  is_admin: boolean
+}
+
+export default function App() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [profileData, setProfileData] = useState<Profile | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+
+    async function loadSession() {
+      const {
+        data: { session: currentSession },
+      } = await supabase.auth.getSession()
+
+      if (!active) return
+
+      setSession(currentSession)
+
+      if (currentSession) {
+        await loadProfile(currentSession.user)
+      }
+
+      setLoading(false)
+    }
+
+    loadSession()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+      setSession(newSession)
+
+      if (newSession) {
+        await loadProfile(newSession.user)
+      } else {
+        setProfileData(null)
+      }
+
+      setLoading(false)
+    })
+
+    return () => {
+      active = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  async function loadProfile(user: User) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, nome, avatar_url, role, is_admin')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Erro ao carregar perfil:', error)
+      setProfileData(null)
+      return
+    }
+
+    setProfileData(data as Profile | null)
+  }
+
+  if (loading) {
+    return (
+      <div className="splash">
+        <Sparkles />
+        <h1>Figurinhas</h1>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return <Auth />
+  }
+
+  return <Shell profile={profileData} />
+}
+
+function Auth() {
+  const [signup, setSignup] = useState(false)
+  const [email, setEmail] = useState('')
+  const [pass, setPass] = useState('')
+  const [name, setName] = useState('')
+  const [msg, setMsg] = useState('')
+  const [err, setErr] = useState('')
+
+  async function google() {
+    if (!supabaseConfigured) {
+      setErr('Configure o .env com as credenciais do Supabase.')
+      return
+    }
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    })
+
+    if (error) setErr(error.message)
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setErr('')
+    setMsg('')
+
+    if (!supabaseConfigured) {
+      setErr('Configure o .env com as credenciais do Supabase.')
+      return
+    }
+
+    const result = signup
+      ? await supabase.auth.signUp({
+          email,
+          password: pass,
+          options: {
+            data: {
+              full_name: name,
+            },
+          },
+        })
+      : await supabase.auth.signInWithPassword({
+          email,
+          password: pass,
+        })
+
+    if (result.error) {
+      setErr(result.error.message)
+    } else if (signup) {
+      setMsg(
+        'Conta criada. Verifique o seu e-mail se a confirmação estiver ativa.'
+      )
+    }
+  }
+
+  return (
+    <main className="auth">
+      <section>
+        <span className="brand">
+          <Sparkles />
+        </span>
+        <small>COLECIONE • ORGANIZE • COMPLETE</small>
+        <h1>A sua coleção de figurinhas.</h1>
+        <p>
+          Controle álbuns, figurinhas, faltas e repetidas num só lugar.
+        </p>
+      </section>
+
+      <div className="authbox">
+        <small>BEM-VINDO</small>
+        <h2>{signup ? 'Criar conta' : 'Entrar'}</h2>
+
+        <button onClick={google} className="google" type="button">
+          G &nbsp; Continuar com Google
+        </button>
+
+        <div className="or">ou</div>
+
+        <form onSubmit={submit}>
+          {signup && (
+            <input
+              placeholder="Nome"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+            />
+          )}
+
+          <input
+            type="email"
+            placeholder="E-mail"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            required
+          />
+
+          <input
+            type="password"
+            placeholder="Palavra-passe"
+            minLength={6}
+            value={pass}
+            onChange={(event) => setPass(event.target.value)}
+            required
+          />
+
+          {err && <div className="error">{err}</div>}
+          {msg && <div className="success">{msg}</div>}
+
+          <button className="primary" type="submit">
+            {signup ? 'Criar conta' : 'Entrar'}
+          </button>
+        </form>
+
+        <p>
+          {signup ? 'Já tem uma conta?' : 'Ainda não tem conta?'}{' '}
+          <button
+            className="link"
+            type="button"
+            onClick={() => {
+              setSignup(!signup)
+              setErr('')
+              setMsg('')
+            }}
+          >
+            {signup ? 'Entrar' : 'Criar conta'}
+          </button>
+        </p>
+      </div>
+    </main>
+  )
+}
+
+function Shell({ profile }: { profile: Profile | null }) {
+  const [open, setOpen] = useState(false)
+  const navigate = useNavigate()
+
+  const isAdmin = profile?.is_admin === true || profile?.role === 'admin'
+
+  async function logout() {
+    await supabase.auth.signOut()
+    navigate('/')
+  }
+
+  return (
+    <div className="layout">
+      <aside className={open ? 'open' : ''}>
+        <div className="logo">
+          <span className="brand small">
+            <Sparkles />
+          </span>
+
+          <b>Figurinhas</b>
+
+          <button
+            onClick={() => setOpen(false)}
+            className="close"
+            type="button"
+            aria-label="Fechar menu"
+          >
+            <X />
+          </button>
+        </div>
+
+        <div className="who">
+          <UserRound />
+          <span>
+            {profile?.nome || 'Colecionador'}
+            <small>
+              {isAdmin ? 'Administrador' : 'Colecionador'}
+            </small>
+          </span>
+        </div>
+
+        <nav>
+          <Link to="/dashboard" onClick={() => setOpen(false)}>
+            <Home /> Início
+          </Link>
+
+          <Link to="/colecao" onClick={() => setOpen(false)}>
+            <BookOpen /> Minha coleção
+          </Link>
+
+          {isAdmin && (
+            <Link to="/admin" onClick={() => setOpen(false)}>
+              <Shield /> Painel admin
+            </Link>
+          )}
+        </nav>
+
+        <button className="logout" onClick={logout} type="button">
+          <LogOut /> Sair
+        </button>
+      </aside>
+
+      {open && (
+        <div
+          className="overlay"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
+      <div className="main">
+        <header>
+          <button
+            className="menu"
+            onClick={() => setOpen(true)}
+            type="button"
+            aria-label="Abrir menu"
+          >
+            <Menu />
+          </button>
+
+          <b>Figurinhas</b>
+        </header>
+
+        <Routes>
+          <Route
+            path="/"
+            element={<Navigate to="/dashboard" replace />}
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <Dashboard
+                name={profile?.nome || 'Colecionador'}
+              />
+            }
+          />
+
+          <Route
+            path="/colecao"
+            element={<Collection />}
+          />
+
+          <Route
+            path="/admin"
+            element={
+              isAdmin ? (
+                <Admin />
+              ) : (
+                <Navigate to="/dashboard" replace />
+              )
+            }
+          />
+
+          <Route
+            path="*"
+            element={<Navigate to="/dashboard" replace />}
+          />
+        </Routes>
+      </div>
+    </div>
+  )
+}
